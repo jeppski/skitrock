@@ -12,16 +12,17 @@ flashName = "skitrock"
 
 def setup():
     GPIO.setwarnings(False)
-    GPIO.setmode(GPIO.BOARD)
-    GPIO.setup(PIRPin, GPIO.IN)
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(PIRPin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 
 def getPinState(pin):
     """Get status from PIR sensor"""
     detection = GPIO.input(pin)
+    print ("GPIO:",pin,"status",detection)
     if detection==1:
-        return true
-    return false
+        return True
+    return False
 
 def getFlashPath(driverName):
     """Find flash with specific name in /proc/mounts"""
@@ -35,31 +36,45 @@ def main():
     """Main setup"""
     setup()
     while True:
-        path = getFlashPath(flashName)
+        print ("Looking for USB-drive")
+        path = "/media/pi/skitrock" #getFlashPath(flashName)
         if os.path.isdir(path):
             break
         time.sleep(0.5)
+
+    """Setup bluetooth"""
+    while not subprocess.run(['bluetoothctl', 'connect', '6C:47:60:64:7D:2B']):
+        print ("Connecting bluetooth")
+        time.sleep(1)
+
+    clock = vlc.MediaPlayer("clock.wav")
 
     """Main loop"""
     while True:
         if getPinState(PIRPin):
             """Play entire song from USB"""
-            print "Poopers detected"
+            print ("Poopers detected")
             if not os.path.isdir(path):
-                print "Path not found. Flash disconnected?"
+                print ("Path not found. Flash disconnected?")
                 break
-            file = random.choice(os.listdir(path))
+            file = path+'/'+random.choice(os.listdir(path))
+            if file is path+"/System Volume Information":
+                break
+            print ("Playing media: "+file)
             media = vlc.MediaPlayer(file)
             media.play()
             while True:
-                time.sleep(0.5)
+                time.sleep(1)
                 state = media.get_state()
                 if state not in playing:
+                    media.release()
                     break
         else:
-            print "No poopers"
-            # No music
-            time.sleep(0.5)
+            print ("No poopers")
+            clock.play()
+            time.sleep(2)
+            clock.stop()
+
 
 if __name__ == "__main__":
     main()
