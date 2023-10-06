@@ -35,17 +35,18 @@ def main():
     playing = set([1,2,3,4])
     """Main setup"""
     setup()
+
+    """Setup bluetooth"""
+    while not subprocess.run(['bluetoothctl', 'connect', '6C:47:60:64:7D:2B']):
+        print ("Connecting bluetooth")
+        time.sleep(1)
+    
     while True:
         print ("Looking for USB-drive")
         path = "/media/pi/skitrock" #getFlashPath(flashName)
         if os.path.isdir(path):
             break
         time.sleep(0.5)
-
-    """Setup bluetooth"""
-    while not subprocess.run(['bluetoothctl', 'connect', '6C:47:60:64:7D:2B']):
-        print ("Connecting bluetooth")
-        time.sleep(1)
 
     clock = vlc.MediaPlayer("clock.wav")
 
